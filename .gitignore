@@ -9,8 +9,12 @@ node_modules/
 dist/
 build/
 coverage/
+
+# Generated documents
+generated/
 .nyc_output/
 .eslintcache
+:memory:
 
 # Environment variables
 .env
