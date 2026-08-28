@@ -5,18 +5,16 @@ import { db } from '../../lib/db.js';
 import { users } from '../../lib/schema.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../../lib/password.js';
-import { generateIdFromEntropySize } from 'lucia';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const usersRouter = new Hono();
 
-// Get all users (super_admin only)
-usersRouter.get('/', async (c) => {
+usersRouter.get('/', authenticate, requireRole('super_admin'), async (c) => {
   try {
     const allUsers = await db.query.users.findMany({
       columns: { passwordHash: false },
-      orderBy: (users, { asc }) => [asc(users.createdAt)]
+      orderBy: (u, { asc }) => [asc(u.createdAt)]
     });
-
     return c.json({ users: allUsers });
   } catch (error) {
     console.error('Get users error:', error);
@@ -24,20 +22,14 @@ usersRouter.get('/', async (c) => {
   }
 });
 
-// Get user by ID
-usersRouter.get('/:id', async (c) => {
+usersRouter.get('/:id', authenticate, requireRole('super_admin'), async (c) => {
   try {
     const id = c.req.param('id');
-    
     const user = await db.query.users.findFirst({
       where: eq(users.id, id),
       columns: { passwordHash: false }
     });
-
-    if (!user) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
+    if (!user) return c.json({ error: 'User not found' }, 404);
     return c.json({ user });
   } catch (error) {
     console.error('Get user error:', error);
@@ -45,8 +37,7 @@ usersRouter.get('/:id', async (c) => {
   }
 });
 
-// Create new user (super_admin only)
-usersRouter.post('/', zValidator('json', z.object({
+usersRouter.post('/', authenticate, requireRole('super_admin'), zValidator('json', z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(2),
@@ -55,16 +46,12 @@ usersRouter.post('/', zValidator('json', z.object({
   try {
     const { email, password, name, role } = c.req.valid('json');
 
-    // Check if user exists
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
+    if (existingUser) return c.json({ error: 'Email already registered' }, 400);
 
-    if (existingUser) {
-      return c.json({ error: 'Email already registered' }, 400);
-    }
-
-    const userId = generateIdFromEntropySize(15);
+    const userId = crypto.randomUUID();
     const hashedPassword = await hashPassword(password);
 
     await db.insert(users).values({
@@ -87,8 +74,7 @@ usersRouter.post('/', zValidator('json', z.object({
   }
 });
 
-// Update user (super_admin only)
-usersRouter.put('/:id', zValidator('json', z.object({
+usersRouter.put('/:id', authenticate, requireRole('super_admin'), zValidator('json', z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
   role: z.enum(['admin', 'super_admin']).optional(),
@@ -101,22 +87,15 @@ usersRouter.put('/:id', zValidator('json', z.object({
     const existingUser = await db.query.users.findFirst({
       where: eq(users.id, id)
     });
-
-    if (!existingUser) {
-      return c.json({ error: 'User not found' }, 404);
-    }
+    if (!existingUser) return c.json({ error: 'User not found' }, 404);
 
     const updateData = { ...data };
-    
-    // Hash password if provided
     if (data.password) {
       updateData.passwordHash = await hashPassword(data.password);
       delete updateData.password;
     }
 
-    await db.update(users)
-      .set(updateData)
-      .where(eq(users.id, id));
+    await db.update(users).set(updateData).where(eq(users.id, id));
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, id),
@@ -130,32 +109,25 @@ usersRouter.put('/:id', zValidator('json', z.object({
   }
 });
 
-// Delete user (super_admin only)
-usersRouter.delete('/:id', async (c) => {
+usersRouter.delete('/:id', authenticate, requireRole('super_admin'), async (c) => {
   try {
     const id = c.req.param('id');
-    
+
     const existingUser = await db.query.users.findFirst({
       where: eq(users.id, id)
     });
+    if (!existingUser) return c.json({ error: 'User not found' }, 404);
 
-    if (!existingUser) {
-      return c.json({ error: 'User not found' }, 404);
-    }
-
-    // Prevent deleting super_admin if you're the only one
     if (existingUser.role === 'super_admin') {
       const superAdmins = await db.query.users.findMany({
         where: eq(users.role, 'super_admin')
       });
-      
       if (superAdmins.length <= 1) {
         return c.json({ error: 'Cannot delete the last super admin' }, 400);
       }
     }
 
     await db.delete(users).where(eq(users.id, id));
-
     return c.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Delete user error:', error);

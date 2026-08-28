@@ -3,20 +3,17 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../../lib/db.js';
 import { aktaTemplates, templateFields } from '../../lib/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { authenticate, requireRole } from '../middleware/auth.js';
 
 const templates = new Hono();
 
-// Get all templates
 templates.get('/', async (c) => {
   try {
     const allTemplates = await db.query.aktaTemplates.findMany({
-      with: {
-        fields: true
-      },
-      orderBy: (templates, { asc }) => [asc(templates.name)]
+      with: { fields: true },
+      orderBy: (t, { asc }) => [asc(t.name)]
     });
-
     return c.json({ templates: allTemplates });
   } catch (error) {
     console.error('Get templates error:', error);
@@ -24,22 +21,14 @@ templates.get('/', async (c) => {
   }
 });
 
-// Get template by ID
 templates.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    
     const template = await db.query.aktaTemplates.findFirst({
       where: eq(aktaTemplates.id, id),
-      with: {
-        fields: true
-      }
+      with: { fields: true }
     });
-
-    if (!template) {
-      return c.json({ error: 'Template not found' }, 404);
-    }
-
+    if (!template) return c.json({ error: 'Template not found' }, 404);
     return c.json({ template });
   } catch (error) {
     console.error('Get template error:', error);
@@ -47,22 +36,14 @@ templates.get('/:id', async (c) => {
   }
 });
 
-// Get template by type
 templates.get('/type/:aktaType', async (c) => {
   try {
     const aktaType = c.req.param('aktaType');
-    
     const template = await db.query.aktaTemplates.findFirst({
       where: eq(aktaTemplates.aktaType, aktaType),
-      with: {
-        fields: true
-      }
+      with: { fields: true }
     });
-
-    if (!template) {
-      return c.json({ error: 'Template not found' }, 404);
-    }
-
+    if (!template) return c.json({ error: 'Template not found' }, 404);
     return c.json({ template });
   } catch (error) {
     console.error('Get template by type error:', error);
@@ -70,8 +51,7 @@ templates.get('/type/:aktaType', async (c) => {
   }
 });
 
-// Create new template (super_admin only)
-templates.post('/', zValidator('json', z.object({
+templates.post('/', authenticate, requireRole('super_admin'), zValidator('json', z.object({
   name: z.string().min(2),
   aktaType: z.string().min(2),
   category: z.string().min(2),
@@ -96,7 +76,6 @@ templates.post('/', zValidator('json', z.object({
     const data = c.req.valid('json');
     const templateId = crypto.randomUUID();
 
-    // Insert template
     await db.insert(aktaTemplates).values({
       id: templateId,
       name: data.name,
@@ -108,7 +87,6 @@ templates.post('/', zValidator('json', z.object({
       version: 1
     });
 
-    // Insert fields
     if (data.fields && data.fields.length > 0) {
       const fieldValues = data.fields.map((field, index) => ({
         id: crypto.randomUUID(),
@@ -122,7 +100,6 @@ templates.post('/', zValidator('json', z.object({
         validation: field.validation,
         order: index
       }));
-
       await db.insert(templateFields).values(fieldValues);
     }
 
@@ -138,8 +115,7 @@ templates.post('/', zValidator('json', z.object({
   }
 });
 
-// Update template (super_admin only)
-templates.put('/:id', zValidator('json', z.object({
+templates.put('/:id', authenticate, requireRole('super_admin'), zValidator('json', z.object({
   name: z.string().min(2).optional(),
   description: z.string().optional(),
   content: z.string().optional(),
@@ -166,24 +142,14 @@ templates.put('/:id', zValidator('json', z.object({
     const existingTemplate = await db.query.aktaTemplates.findFirst({
       where: eq(aktaTemplates.id, id)
     });
+    if (!existingTemplate) return c.json({ error: 'Template not found' }, 404);
 
-    if (!existingTemplate) {
-      return c.json({ error: 'Template not found' }, 404);
-    }
-
-    // Update template
     await db.update(aktaTemplates)
-      .set({
-        ...data,
-        version: existingTemplate.version + 1,
-        updatedAt: new Date()
-      })
+      .set({ ...data, version: existingTemplate.version + 1, updatedAt: new Date() })
       .where(eq(aktaTemplates.id, id));
 
-    // Update fields - delete old and insert new
     if (data.fields) {
       await db.delete(templateFields).where(eq(templateFields.templateId, id));
-      
       const fieldValues = data.fields.map((field, index) => ({
         id: field.id || crypto.randomUUID(),
         templateId: id,
@@ -196,7 +162,6 @@ templates.put('/:id', zValidator('json', z.object({
         validation: field.validation,
         order: index
       }));
-
       await db.insert(templateFields).values(fieldValues);
     }
 
@@ -212,23 +177,15 @@ templates.put('/:id', zValidator('json', z.object({
   }
 });
 
-// Delete template (super_admin only)
-templates.delete('/:id', async (c) => {
+templates.delete('/:id', authenticate, requireRole('super_admin'), async (c) => {
   try {
     const id = c.req.param('id');
-    
     const existingTemplate = await db.query.aktaTemplates.findFirst({
       where: eq(aktaTemplates.id, id)
     });
+    if (!existingTemplate) return c.json({ error: 'Template not found' }, 404);
 
-    if (!existingTemplate) {
-      return c.json({ error: 'Template not found' }, 404);
-    }
-
-    // Delete fields first
     await db.delete(templateFields).where(eq(templateFields.templateId, id));
-    
-    // Delete template
     await db.delete(aktaTemplates).where(eq(aktaTemplates.id, id));
 
     return c.json({ message: 'Template deleted successfully' });

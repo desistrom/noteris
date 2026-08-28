@@ -2,15 +2,14 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../../lib/db.js';
-import { users, sessions } from '../../lib/schema.js';
+import { users } from '../../lib/schema.js';
 import { lucia } from '../../lib/auth.js';
 import { hashPassword, verifyPassword } from '../../lib/password.js';
 import { eq } from 'drizzle-orm';
-import { generateIdFromEntropySize } from 'lucia';
+import { authenticate } from '../middleware/auth.js';
 
 const auth = new Hono();
 
-// Register endpoint
 auth.post('/register', zValidator('json', z.object({
   email: z.string().email(),
   password: z.string().min(6),
@@ -20,7 +19,6 @@ auth.post('/register', zValidator('json', z.object({
   try {
     const { email, password, name, role = 'admin' } = c.req.valid('json');
 
-    // Check if user exists
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email)
     });
@@ -29,7 +27,7 @@ auth.post('/register', zValidator('json', z.object({
       return c.json({ error: 'Email already registered' }, 400);
     }
 
-    const userId = generateIdFromEntropySize(15);
+    const userId = crypto.randomUUID();
     const hashedPassword = await hashPassword(password);
 
     await db.insert(users).values({
@@ -47,7 +45,6 @@ auth.post('/register', zValidator('json', z.object({
   }
 });
 
-// Login endpoint
 auth.post('/login', zValidator('json', z.object({
   email: z.string().email(),
   password: z.string().min(1)
@@ -88,11 +85,11 @@ auth.post('/login', zValidator('json', z.object({
   }
 });
 
-// Logout endpoint
 auth.post('/logout', async (c) => {
   try {
-    const sessionId = c.get('session');
-    
+    const cookie = c.req.header('Cookie');
+    const sessionId = cookie?.match(/auth_session=([^;]+)/)?.[1];
+
     if (sessionId) {
       await lucia.invalidateSession(sessionId);
     }
@@ -105,31 +102,9 @@ auth.post('/logout', async (c) => {
   }
 });
 
-// Get current user
-auth.get('/me', async (c) => {
-  try {
-    const sessionId = c.get('session');
-    
-    if (!sessionId) {
-      return c.json({ error: 'Not authenticated' }, 401);
-    }
-
-    const session = await lucia.validateSession(sessionId);
-    
-    if (!session || !session.user) {
-      return c.json({ error: 'Invalid session' }, 401);
-    }
-
-    const user = await db.query.users.findFirst({
-      where: eq(users.id, session.user.id),
-      columns: { passwordHash: false }
-    });
-
-    return c.json({ user });
-  } catch (error) {
-    console.error('Get user error:', error);
-    return c.json({ error: 'Failed to get user' }, 500);
-  }
+auth.get('/me', authenticate, async (c) => {
+  const user = c.get('user');
+  return c.json({ user });
 });
 
 export default auth;
