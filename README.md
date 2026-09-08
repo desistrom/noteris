@@ -143,6 +143,30 @@ Server akan berjalan di:
 - **super_admin**: Full access (kelola templates, users, aktas)
 - **admin**: Manage aktas dan progress saja
 
+### Akun Default (dari `npm run db:seed`)
+
+Akun dibuat otomatis oleh `src/server/seed.js` jika tabel `users` kosong. Password diambil dari env `SEED_PASSWORD` atau default `password123`. Jalankan setelah setup database:
+
+```bash
+npm run db:seed
+# atau dengan password custom: SEED_PASSWORD=rahasia123 npm run db:seed
+```
+
+| Role | Email | Password Default | Nama | Akses |
+|------|-------|------------------|------|-------|
+| super_admin | `admin@notaris.com` | `password123` / `$SEED_PASSWORD` | Super Admin | Full access: kelola templates, users, aktas |
+| admin | `staff@notaris.com` | `password123` / `$SEED_PASSWORD` | Staff Admin | Kelola aktas & progress saja |
+
+> **Catatan Keamanan:** Segera ganti password setelah login pertama, terutama di production. Jangan commit password asli ke repository.
+
+Contoh login:
+
+```bash
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@notaris.com","password":"password123"}'
+```
+
 ## Development Commands
 
 ```bash

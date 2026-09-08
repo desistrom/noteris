@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, boolean, uuid, varchar, jsonb } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, boolean, uuid, varchar, jsonb, unique } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 export const users = pgTable('users', {
@@ -23,13 +23,29 @@ export const aktaTemplates = pgTable('akta_templates', {
   category: varchar('category', { length: 100 }).notNull(),
   name: varchar('name', { length: 255 }).notNull(),
   description: text('description'),
-  content: text('content').notNull(),
+  content: text('content'),
+  prefix: varchar('prefix', { length: 20 }).notNull().default('AKT'),
+  templateFilePath: text('template_file_path'),
+  templateFileName: varchar('template_file_name', { length: 255 }),
+  templateFileSize: integer('template_file_size'),
+  templateMime: varchar('template_mime', { length: 100 }),
   stages: jsonb('stages').notNull().default([]),
   version: integer('version').notNull().default(1),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
+
+export const aktaCounters = pgTable('akta_counters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  prefix: varchar('prefix', { length: 20 }).notNull(),
+  year: integer('year').notNull(),
+  lastNumber: integer('last_number').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (t) => ({
+  uniq: unique('akta_counters_prefix_year_unique').on(t.prefix, t.year),
+}));
 
 export const templateFields = pgTable('template_fields', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -71,7 +87,7 @@ export const progressHistory = pgTable('progress_history', {
   stageName: varchar('stage_name', { length: 255 }).notNull(),
   status: varchar('status', { length: 30 }).notNull(),
   notes: text('notes'),
-  completedBy: uuid('completed_by'),
+  completedBy: uuid('completed_by').references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -98,4 +114,5 @@ export const aktasRelations = relations(aktas, ({ many }) => ({
 
 export const progressHistoryRelations = relations(progressHistory, ({ one }) => ({
   akta: one(aktas, { fields: [progressHistory.aktaId], references: [aktas.id] }),
+  completedByUser: one(users, { fields: [progressHistory.completedBy], references: [users.id] }),
 }));

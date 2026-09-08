@@ -4,6 +4,27 @@ import { aktaTemplates, templateFields, users } from '../lib/schema.js';
 import { eq } from 'drizzle-orm';
 import { hashPassword } from '../lib/password.js';
 
+const prefixMap = {
+  PT_Pendirian: 'PT',
+  PT_Perubahan: 'PT-U',
+  Yayasan_Pendirian: 'YYS',
+  Yayasan_Perubahan: 'YYS-U',
+  CV_Pendirian: 'CV',
+  CV_Perubahan: 'CV-U',
+  Koperasi_Pendirian: 'KOP',
+  Koperasi_Perubahan: 'KOP-U',
+  Jual_Beli_Tanah: 'JBT',
+  Jual_Beli_Properti: 'JBP',
+  Jual_Beli_Kendaraan: 'JBK',
+  Perjanjian_Kredit: 'PK',
+  Perjanjian_Sewa: 'PS',
+  Perjanjian_Kerjasama: 'PKS',
+  Perjanjian_Pengakuan_Utang: 'PU',
+  Akta_Hak_Waris: 'WARIS',
+  Akta_Wasiat: 'WASIAT',
+  Akta_Hibah: 'HIBAH',
+};
+
 const templatesToSeed = [
   {
     aktaType: 'PT_Pendirian',
@@ -122,6 +143,7 @@ const fieldSets = {
     { name: 'capital', label: 'Modal Dasar', type: 'text', required: true },
     { name: 'capitalWords', label: 'Modal Dasar (terbilang)', type: 'textarea', required: true },
     { name: 'directorName', label: 'Nama Direktur', type: 'text', required: true },
+    { name: 'directorNik', label: 'NIK Direktur', type: 'text', required: true },
     { name: 'directorBirthPlace', label: 'Tempat Lahir Direktur', type: 'text', required: true },
     { name: 'directorBirthDate', label: 'Tanggal Lahir Direktur', type: 'date', required: true },
     { name: 'directorOccupation', label: 'Pekerjaan Direktur', type: 'text', required: true },
@@ -136,6 +158,16 @@ const fieldSets = {
     { name: 'approvedCapitalWords', label: 'Modal Diperbolehkan (terbilang)', type: 'text', required: true },
     { name: 'companyDuration', label: 'Lama Waktu Perseroan (tahun)', type: 'text', required: true },
     { name: 'termLength', label: 'Masa Jabatan Direktur/Komisaris', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -143,9 +175,23 @@ const fieldSets = {
     { name: 'companyName', label: 'Nama Perusahaan', type: 'text', required: true },
     { name: 'companyAddress', label: 'Alamat Kantor', type: 'textarea', required: true },
     { name: 'directorName', label: 'Nama Direktur', type: 'text', required: true },
+    { name: 'directorNik', label: 'NIK Direktur', type: 'text', required: true },
+    { name: 'directorBirthPlace', label: 'Tempat Lahir Direktur', type: 'text', required: true },
+    { name: 'directorBirthDate', label: 'Tanggal Lahir Direktur', type: 'date', required: true },
+    { name: 'directorOccupation', label: 'Pekerjaan Direktur', type: 'text', required: true },
     { name: 'changeType', label: 'Jenis Perubahan', type: 'text', required: true },
     { name: 'oldProvision', label: 'Ketentuan Lama', type: 'textarea', required: true },
     { name: 'newProvision', label: 'Ketentuan Baru', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -153,6 +199,9 @@ const fieldSets = {
     { name: 'foundationName', label: 'Nama Yayasan', type: 'text', required: true },
     { name: 'foundationAddress', label: 'Alamat Yayasan', type: 'textarea', required: true },
     { name: 'founderName', label: 'Nama Pendiri', type: 'text', required: true },
+    { name: 'founderNik', label: 'NIK Pendiri', type: 'text', required: true },
+    { name: 'founderBirthPlace', label: 'Tempat Lahir Pendiri', type: 'text', required: true },
+    { name: 'founderBirthDate', label: 'Tanggal Lahir Pendiri', type: 'date', required: true },
     { name: 'founderAddress', label: 'Alamat Pendiri', type: 'textarea', required: true },
     { name: 'purpose', label: 'Tujuan Yayasan', type: 'textarea', required: true },
     { name: 'initialAssets', label: 'Kekayaan Awal', type: 'text', required: true },
@@ -160,6 +209,16 @@ const fieldSets = {
     { name: 'boardMembers', label: 'Anggota Pembina', type: 'textarea', required: true },
     { name: 'managementBoard', label: 'Anggota Pengurus', type: 'textarea', required: true },
     { name: 'termLength', label: 'Masa Jabatan (tahun)', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -169,6 +228,16 @@ const fieldSets = {
     { name: 'changeType', label: 'Jenis Perubahan', type: 'text', required: true },
     { name: 'oldProvision', label: 'Ketentuan Lama', type: 'textarea', required: true },
     { name: 'newProvision', label: 'Ketentuan Baru', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -186,6 +255,16 @@ const fieldSets = {
     { name: 'generalPartnerCapital', label: 'Modal Sekutu Pengurus', type: 'text', required: true },
     { name: 'limitedPartnerCapital', label: 'Modal Sekutu Komanditer', type: 'text', required: true },
     { name: 'businessPurpose', label: 'Tujuan Usaha', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -195,6 +274,16 @@ const fieldSets = {
     { name: 'changeType', label: 'Jenis Perubahan', type: 'text', required: true },
     { name: 'oldProvision', label: 'Ketentuan Lama', type: 'textarea', required: true },
     { name: 'newProvision', label: 'Ketentuan Baru', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -202,11 +291,24 @@ const fieldSets = {
     { name: 'coopName', label: 'Nama Koperasi', type: 'text', required: true },
     { name: 'coopAddress', label: 'Alamat Koperasi', type: 'textarea', required: true },
     { name: 'founderName', label: 'Nama Pendiri', type: 'text', required: true },
+    { name: 'founderNik', label: 'NIK Pendiri', type: 'text', required: true },
+    { name: 'founderBirthPlace', label: 'Tempat Lahir Pendiri', type: 'text', required: true },
+    { name: 'founderBirthDate', label: 'Tanggal Lahir Pendiri', type: 'date', required: true },
     { name: 'founderAddress', label: 'Alamat Pendiri', type: 'textarea', required: true },
     { name: 'founders', label: 'Daftar Pendiri', type: 'textarea', required: true },
     { name: 'capital', label: 'Modal Awal', type: 'text', required: true },
     { name: 'capitalWords', label: 'Modal Awal (terbilang)', type: 'textarea', required: true },
     { name: 'purpose', label: 'Tujuan Koperasi', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -216,46 +318,132 @@ const fieldSets = {
     { name: 'changeType', label: 'Jenis Perubahan', type: 'text', required: true },
     { name: 'oldProvision', label: 'Ketentuan Lama', type: 'textarea', required: true },
     { name: 'newProvision', label: 'Ketentuan Baru', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Jual_Beli_Tanah: [
     { name: 'sellerName', label: 'Nama Penjual', type: 'text', required: true },
+    { name: 'sellerNik', label: 'NIK Penjual', type: 'text', required: true },
+    { name: 'sellerBirthPlace', label: 'Tempat Lahir Penjual', type: 'text', required: true },
+    { name: 'sellerBirthDate', label: 'Tanggal Lahir Penjual', type: 'date', required: true },
+    { name: 'sellerOccupation', label: 'Pekerjaan Penjual', type: 'text', required: true },
+    { name: 'sellerMaritalStatus', label: 'Status Perkawinan Penjual', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'sellerSpouseName', label: 'Nama Pasangan Penjual', type: 'text', required: false },
     { name: 'sellerAddress', label: 'Alamat Penjual', type: 'textarea', required: true },
     { name: 'buyerName', label: 'Nama Pembeli', type: 'text', required: true },
+    { name: 'buyerNik', label: 'NIK Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthPlace', label: 'Tempat Lahir Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthDate', label: 'Tanggal Lahir Pembeli', type: 'date', required: true },
+    { name: 'buyerOccupation', label: 'Pekerjaan Pembeli', type: 'text', required: true },
+    { name: 'buyerMaritalStatus', label: 'Status Perkawinan Pembeli', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'buyerSpouseName', label: 'Nama Pasangan Pembeli', type: 'text', required: false },
     { name: 'buyerAddress', label: 'Alamat Pembeli', type: 'textarea', required: true },
+    { name: 'landRightType', label: 'Jenis Hak Tanah', type: 'select', required: true, options: ['Hak Milik','HGB','HGU','HPL'] },
     { name: 'landLocation', label: 'Lokasi Tanah', type: 'textarea', required: true },
     { name: 'landArea', label: 'Luas Tanah (m\u00B2)', type: 'text', required: true },
+    { name: 'landNIB', label: 'NIB Tanah', type: 'text', required: true },
     { name: 'landCertificate', label: 'Nomor Sertifikat', type: 'text', required: true },
     { name: 'certificateHolder', label: 'Nama Pemegang Sertifikat', type: 'text', required: true },
+    { name: 'landSurveyNumber', label: 'Nomor Surat Ukur', type: 'text', required: true },
+    { name: 'landSurveyDate', label: 'Tanggal Surat Ukur', type: 'date', required: true },
+    { name: 'landNOP', label: 'NOP PBB', type: 'text', required: true },
+    { name: 'landBoundariesNorth', label: 'Batas Utara', type: 'text', required: true },
+    { name: 'landBoundariesSouth', label: 'Batas Selatan', type: 'text', required: true },
+    { name: 'landBoundariesEast', label: 'Batas Timur', type: 'text', required: true },
+    { name: 'landBoundariesWest', label: 'Batas Barat', type: 'text', required: true },
     { name: 'price', label: 'Harga Jual Beli', type: 'text', required: true },
     { name: 'priceWords', label: 'Harga (terbilang)', type: 'textarea', required: true },
     { name: 'paymentMethod', label: 'Cara Pembayaran', type: 'text', required: true },
     { name: 'bphtbBurden', label: 'Beban BPHTB', type: 'text', required: true },
     { name: 'pphBurden', label: 'Beban PPh', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja PPAT', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK PPAT', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK PPAT', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Jual_Beli_Properti: [
     { name: 'sellerName', label: 'Nama Penjual', type: 'text', required: true },
+    { name: 'sellerNik', label: 'NIK Penjual', type: 'text', required: true },
+    { name: 'sellerBirthPlace', label: 'Tempat Lahir Penjual', type: 'text', required: true },
+    { name: 'sellerBirthDate', label: 'Tanggal Lahir Penjual', type: 'date', required: true },
+    { name: 'sellerOccupation', label: 'Pekerjaan Penjual', type: 'text', required: true },
+    { name: 'sellerMaritalStatus', label: 'Status Perkawinan Penjual', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'sellerSpouseName', label: 'Nama Pasangan Penjual', type: 'text', required: false },
     { name: 'sellerAddress', label: 'Alamat Penjual', type: 'textarea', required: true },
     { name: 'buyerName', label: 'Nama Pembeli', type: 'text', required: true },
+    { name: 'buyerNik', label: 'NIK Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthPlace', label: 'Tempat Lahir Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthDate', label: 'Tanggal Lahir Pembeli', type: 'date', required: true },
+    { name: 'buyerOccupation', label: 'Pekerjaan Pembeli', type: 'text', required: true },
+    { name: 'buyerMaritalStatus', label: 'Status Perkawinan Pembeli', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'buyerSpouseName', label: 'Nama Pasangan Pembeli', type: 'text', required: false },
     { name: 'buyerAddress', label: 'Alamat Pembeli', type: 'textarea', required: true },
     { name: 'propertyLocation', label: 'Lokasi Properti', type: 'textarea', required: true },
     { name: 'propertyType', label: 'Jenis Properti', type: 'text', required: true },
     { name: 'buildingArea', label: 'Luas Bangunan (m\u00B2)', type: 'text', required: true },
     { name: 'landArea', label: 'Luas Tanah (m\u00B2)', type: 'text', required: true },
+    { name: 'landRightType', label: 'Jenis Hak Tanah', type: 'select', required: true, options: ['Hak Milik','HGB','HGU','HPL'] },
+    { name: 'landNIB', label: 'NIB', type: 'text', required: true },
+    { name: 'landSurveyNumber', label: 'Nomor Surat Ukur', type: 'text', required: true },
+    { name: 'landSurveyDate', label: 'Tanggal Surat Ukur', type: 'date', required: true },
+    { name: 'landNOP', label: 'NOP PBB', type: 'text', required: true },
+    { name: 'landBoundariesNorth', label: 'Batas Utara', type: 'text', required: true },
+    { name: 'landBoundariesSouth', label: 'Batas Selatan', type: 'text', required: true },
+    { name: 'landBoundariesEast', label: 'Batas Timur', type: 'text', required: true },
+    { name: 'landBoundariesWest', label: 'Batas Barat', type: 'text', required: true },
     { name: 'certificateNumber', label: 'Nomor Sertifikat', type: 'text', required: true },
     { name: 'price', label: 'Harga Jual Beli', type: 'text', required: true },
     { name: 'priceWords', label: 'Harga (terbilang)', type: 'textarea', required: true },
     { name: 'paymentMethod', label: 'Cara Pembayaran', type: 'text', required: true },
+    { name: 'bphtbBurden', label: 'Beban BPHTB', type: 'text', required: true },
+    { name: 'pphBurden', label: 'Beban PPh', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja PPAT', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK PPAT', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK PPAT', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Jual_Beli_Kendaraan: [
     { name: 'sellerName', label: 'Nama Penjual', type: 'text', required: true },
+    { name: 'sellerNik', label: 'NIK Penjual', type: 'text', required: true },
+    { name: 'sellerBirthPlace', label: 'Tempat Lahir Penjual', type: 'text', required: true },
+    { name: 'sellerBirthDate', label: 'Tanggal Lahir Penjual', type: 'date', required: true },
+    { name: 'sellerOccupation', label: 'Pekerjaan Penjual', type: 'text', required: true },
+    { name: 'sellerMaritalStatus', label: 'Status Perkawinan Penjual', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'sellerSpouseName', label: 'Nama Pasangan Penjual', type: 'text', required: false },
     { name: 'sellerAddress', label: 'Alamat Penjual', type: 'textarea', required: true },
     { name: 'buyerName', label: 'Nama Pembeli', type: 'text', required: true },
+    { name: 'buyerNik', label: 'NIK Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthPlace', label: 'Tempat Lahir Pembeli', type: 'text', required: true },
+    { name: 'buyerBirthDate', label: 'Tanggal Lahir Pembeli', type: 'date', required: true },
+    { name: 'buyerOccupation', label: 'Pekerjaan Pembeli', type: 'text', required: true },
+    { name: 'buyerMaritalStatus', label: 'Status Perkawinan Pembeli', type: 'select', required: true, options: ['Kawin','Belum Kawin','Cerai'] },
+    { name: 'buyerSpouseName', label: 'Nama Pasangan Pembeli', type: 'text', required: false },
     { name: 'buyerAddress', label: 'Alamat Pembeli', type: 'textarea', required: true },
     { name: 'vehicleType', label: 'Jenis Kendaraan', type: 'text', required: true },
     { name: 'vehicleBrand', label: 'Merk Kendaraan', type: 'text', required: true },
@@ -268,13 +456,31 @@ const fieldSets = {
     { name: 'fuelType', label: 'Jenis Bahan Bakar', type: 'text', required: true },
     { name: 'price', label: 'Harga Jual Beli', type: 'text', required: true },
     { name: 'priceWords', label: 'Harga (terbilang)', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja PPAT', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK PPAT', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK PPAT', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Perjanjian_Kredit: [
     { name: 'creditorName', label: 'Nama Pemberi Kredit', type: 'text', required: true },
+    { name: 'creditorNik', label: 'NIK Pemberi Kredit', type: 'text', required: true },
+    { name: 'creditorBirthPlace', label: 'Tempat Lahir Pemberi Kredit', type: 'text', required: true },
+    { name: 'creditorBirthDate', label: 'Tanggal Lahir Pemberi Kredit', type: 'date', required: true },
+    { name: 'creditorOccupation', label: 'Pekerjaan Pemberi Kredit', type: 'text', required: true },
     { name: 'creditorAddress', label: 'Alamat Pemberi Kredit', type: 'textarea', required: true },
     { name: 'debtorName', label: 'Nama Penerima Kredit', type: 'text', required: true },
+    { name: 'debtorNik', label: 'NIK Penerima Kredit', type: 'text', required: true },
+    { name: 'debtorBirthPlace', label: 'Tempat Lahir Penerima Kredit', type: 'text', required: true },
+    { name: 'debtorBirthDate', label: 'Tanggal Lahir Penerima Kredit', type: 'date', required: true },
+    { name: 'debtorOccupation', label: 'Pekerjaan Penerima Kredit', type: 'text', required: true },
     { name: 'debtorAddress', label: 'Alamat Penerima Kredit', type: 'textarea', required: true },
     { name: 'loanAmount', label: 'Jumlah Pinjaman', type: 'text', required: true },
     { name: 'loanAmountWords', label: 'Jumlah Pinjaman (terbilang)', type: 'textarea', required: true },
@@ -285,13 +491,29 @@ const fieldSets = {
     { name: 'repaymentSchedule', label: 'Jadwal Pembayaran', type: 'textarea', required: true },
     { name: 'collateral', label: 'Jaminan', type: 'textarea', required: false },
     { name: 'lateFee', label: 'Denda Keterlambatan', type: 'text', required: false },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Perjanjian_Sewa: [
     { name: 'lessorName', label: 'Nama Pihak Menyewakan', type: 'text', required: true },
+    { name: 'lessorNik', label: 'NIK Pihak Menyewakan', type: 'text', required: true },
+    { name: 'lessorBirthPlace', label: 'Tempat Lahir Pihak Menyewakan', type: 'text', required: true },
+    { name: 'lessorBirthDate', label: 'Tanggal Lahir Pihak Menyewakan', type: 'date', required: true },
     { name: 'lessorAddress', label: 'Alamat Pihak Menyewakan', type: 'textarea', required: true },
     { name: 'lesseeName', label: 'Nama Pihak Penyewa', type: 'text', required: true },
+    { name: 'lesseeNik', label: 'NIK Pihak Penyewa', type: 'text', required: true },
+    { name: 'lesseeBirthPlace', label: 'Tempat Lahir Pihak Penyewa', type: 'text', required: true },
+    { name: 'lesseeBirthDate', label: 'Tanggal Lahir Pihak Penyewa', type: 'date', required: true },
     { name: 'lesseeAddress', label: 'Alamat Pihak Penyewa', type: 'textarea', required: true },
     { name: 'objectLeased', label: 'Objek yang Disewakan', type: 'textarea', required: true },
     { name: 'leasePeriod', label: 'Jangka Waktu Sewa', type: 'text', required: true },
@@ -303,32 +525,74 @@ const fieldSets = {
     { name: 'paymentMethod', label: 'Cara Pembayaran', type: 'text', required: true },
     { name: 'deposit', label: 'Uang Jaminan', type: 'text', required: false },
     { name: 'lesseeObligations', label: 'Kewajiban Penyewa', type: 'textarea', required: false },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Perjanjian_Kerjasama: [
     { name: 'partyAName', label: 'Nama Pihak Pertama', type: 'text', required: true },
+    { name: 'partyANik', label: 'NIK Pihak Pertama', type: 'text', required: true },
+    { name: 'partyABirthPlace', label: 'Tempat Lahir Pihak Pertama', type: 'text', required: true },
+    { name: 'partyABirthDate', label: 'Tanggal Lahir Pihak Pertama', type: 'date', required: true },
     { name: 'partyAAddress', label: 'Alamat Pihak Pertama', type: 'textarea', required: true },
     { name: 'partyBName', label: 'Nama Pihak Kedua', type: 'text', required: true },
+    { name: 'partyBNik', label: 'NIK Pihak Kedua', type: 'text', required: true },
+    { name: 'partyBBirthPlace', label: 'Tempat Lahir Pihak Kedua', type: 'text', required: true },
+    { name: 'partyBBirthDate', label: 'Tanggal Lahir Pihak Kedua', type: 'date', required: true },
     { name: 'partyBAddress', label: 'Alamat Pihak Kedua', type: 'textarea', required: true },
     { name: 'cooperationType', label: 'Jenis Kerja Sama', type: 'text', required: true },
     { name: 'cooperationScope', label: 'Ruang Lingkup', type: 'textarea', required: true },
     { name: 'profitSharing', label: 'Pembagian Keuntungan', type: 'textarea', required: true },
     { name: 'duration', label: 'Jangka Waktu', type: 'text', required: true },
     { name: 'responsibilities', label: 'Kewajiban Masing-masing Pihak', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Perjanjian_Pengakuan_Utang: [
     { name: 'creditorName', label: 'Nama Kreditor', type: 'text', required: true },
+    { name: 'creditorNik', label: 'NIK Kreditor', type: 'text', required: true },
+    { name: 'creditorBirthPlace', label: 'Tempat Lahir Kreditor', type: 'text', required: true },
+    { name: 'creditorBirthDate', label: 'Tanggal Lahir Kreditor', type: 'date', required: true },
     { name: 'creditorAddress', label: 'Alamat Kreditor', type: 'textarea', required: true },
     { name: 'debtorName', label: 'Nama Debitor', type: 'text', required: true },
+    { name: 'debtorNik', label: 'NIK Debitor', type: 'text', required: true },
+    { name: 'debtorBirthPlace', label: 'Tempat Lahir Debitor', type: 'text', required: true },
+    { name: 'debtorBirthDate', label: 'Tanggal Lahir Debitor', type: 'date', required: true },
     { name: 'debtorAddress', label: 'Alamat Debitor', type: 'textarea', required: true },
     { name: 'debtAmount', label: 'Jumlah Utang', type: 'text', required: true },
     { name: 'debtAmountWords', label: 'Jumlah Utang (terbilang)', type: 'textarea', required: true },
     { name: 'debtOrigin', label: 'Asal Usul Utang', type: 'textarea', required: true },
     { name: 'repaymentDate', label: 'Tanggal Jatuh Tempo', type: 'date', required: true },
     { name: 'collateral', label: 'Jaminan', type: 'textarea', required: false },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -337,15 +601,29 @@ const fieldSets = {
     { name: 'deceasedDate', label: 'Tanggal Meninggal', type: 'date', required: true },
     { name: 'deceasedPlace', label: 'Tempat Meninggal', type: 'text', required: true },
     { name: 'heir1Name', label: 'Nama Ahli Waris (Utama)', type: 'text', required: true },
+    { name: 'heir1Nik', label: 'NIK Ahli Waris', type: 'text', required: true },
+    { name: 'heir1BirthPlace', label: 'Tempat Lahir Ahli Waris', type: 'text', required: true },
+    { name: 'heir1BirthDate', label: 'Tanggal Lahir Ahli Waris', type: 'date', required: true },
     { name: 'heir1Address', label: 'Alamat Ahli Waris', type: 'textarea', required: true },
     { name: 'heirs', label: 'Daftar Ahli Waris', type: 'textarea', required: true },
     { name: 'inheritedAssets', label: 'Harta Warisan', type: 'textarea', required: true },
     { name: 'distribution', label: 'Pembagian Warisan', type: 'textarea', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Akta_Wasiat: [
     { name: 'testatorName', label: 'Nama Pewasiat', type: 'text', required: true },
+    { name: 'testatorNik', label: 'NIK Pewasiat', type: 'text', required: true },
     { name: 'testatorBirthPlace', label: 'Tempat Lahir Pewasiat', type: 'text', required: true },
     { name: 'testatorBirthDate', label: 'Tanggal Lahir Pewasiat', type: 'date', required: true },
     { name: 'testatorOccupation', label: 'Pekerjaan Pewasiat', type: 'text', required: true },
@@ -354,19 +632,47 @@ const fieldSets = {
     { name: 'bequeathedAssets', label: 'Harta yang Diwasiatkan', type: 'textarea', required: true },
     { name: 'conditions', label: 'Syarat-syarat Wasiat', type: 'textarea', required: false },
     { name: 'executor', label: 'Pelaksana Wasiat', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
   Akta_Hibah: [
     { name: 'donorName', label: 'Nama Pemberi Hibah', type: 'text', required: true },
+    { name: 'donorNik', label: 'NIK Pemberi Hibah', type: 'text', required: true },
+    { name: 'donorBirthPlace', label: 'Tempat Lahir Pemberi Hibah', type: 'text', required: true },
+    { name: 'donorBirthDate', label: 'Tanggal Lahir Pemberi Hibah', type: 'date', required: true },
+    { name: 'donorOccupation', label: 'Pekerjaan Pemberi Hibah', type: 'text', required: true },
     { name: 'donorAddress', label: 'Alamat Pemberi Hibah', type: 'textarea', required: true },
     { name: 'doneeName', label: 'Nama Penerima Hibah', type: 'text', required: true },
+    { name: 'doneeNik', label: 'NIK Penerima Hibah', type: 'text', required: true },
+    { name: 'doneeBirthPlace', label: 'Tempat Lahir Penerima Hibah', type: 'text', required: true },
+    { name: 'doneeBirthDate', label: 'Tanggal Lahir Penerima Hibah', type: 'date', required: true },
+    { name: 'doneeOccupation', label: 'Pekerjaan Penerima Hibah', type: 'text', required: true },
     { name: 'doneeAddress', label: 'Alamat Penerima Hibah', type: 'textarea', required: true },
     { name: 'giftedAssets', label: 'Harta yang Dihibahkan', type: 'textarea', required: true },
     { name: 'assetValue', label: 'Nilai Harta', type: 'text', required: true },
     { name: 'assetValueWords', label: 'Nilai Harta (terbilang)', type: 'textarea', required: true },
     { name: 'conditions', label: 'Syarat-syarat Hibah', type: 'textarea', required: false },
     { name: 'taxBurden', label: 'Beban Pajak', type: 'text', required: true },
+    { name: 'ppatName', label: 'Nama Notaris/PPAT', type: 'text', required: true },
+    { name: 'ppatAddress', label: 'Alamat Notaris/PPAT', type: 'textarea', required: true },
+    { name: 'ppatWorkArea', label: 'Wilayah Kerja', type: 'text', required: true },
+    { name: 'ppatSkNumber', label: 'No SK', type: 'text', required: true },
+    { name: 'ppatSkDate', label: 'Tanggal SK', type: 'date', required: true },
+    { name: 'aktaNumber', label: 'Nomor Akta', type: 'text', required: true },
+    { name: 'witness1Name', label: 'Nama Saksi 1', type: 'text', required: true },
+    { name: 'witness1Address', label: 'Alamat Saksi 1', type: 'textarea', required: true },
+    { name: 'witness2Name', label: 'Nama Saksi 2', type: 'text', required: true },
+    { name: 'witness2Address', label: 'Alamat Saksi 2', type: 'textarea', required: true },
     { name: 'signingDate', label: 'Tanggal Penandatanganan', type: 'date', required: true },
     { name: 'signingCity', label: 'Kota Penandatanganan', type: 'text', required: true },
   ],
@@ -376,67 +682,65 @@ export async function runSeed(database) {
   const db = database;
   console.log('Seeding database...\n');
 
-  const existingTemplates = await db.query.aktaTemplates.findMany();
-  if (existingTemplates.length > 0) {
-    console.log(`Found ${existingTemplates.length} existing templates. Skipping seed.`);
-    console.log('To re-seed, delete existing templates first or truncate the tables.\n');
-  } else {
-    for (const tmpl of templatesToSeed) {
-      const fields = fieldSets[tmpl.aktaType] || [];
+  const existingTemplates = await db.query.aktaTemplates.findMany({ with: { fields: true } });
+  let created = 0, updated = 0;
+  for (const tmpl of templatesToSeed) {
+    const fields = fieldSets[tmpl.aktaType] || [];
+    const stages = (tmpl.aktaType.includes('PT_Pendirian') ?
+      ['Pengecekan Nama PT', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan SK Kemenkumham', 'Penerbitan SK', 'Selesai'] :
+      tmpl.aktaType.includes('PT_Perubahan') ?
+      ['Rapat Umum Pemegang Saham', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
+      tmpl.aktaType.includes('Yayasan_Pendirian') ?
+      ['Pengecekan Nama Yayasan', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan SK Kemenkumham', 'Penerbitan SK', 'Selesai'] :
+      tmpl.aktaType.includes('Yayasan_Perubahan') ?
+      ['Rapat Pembina', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
+      tmpl.aktaType.includes('CV_Pendirian') ?
+      ['Penyusunan Akta', 'Penandatanganan Akta', 'Pendaftaran ke Kemenkumham', 'Penerbitan SK', 'Selesai'] :
+      tmpl.aktaType.includes('CV_Perubahan') ?
+      ['Musyawarah Sekutu', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
+      tmpl.aktaType.includes('Koperasi_Pendirian') ?
+      ['Rapat Pendirian', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan ke Dinas Koperasi', 'Penerbitan SK', 'Selesai'] :
+      tmpl.aktaType.includes('Koperasi_Perubahan') ?
+      ['Rapat Anggota', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Dinas Koperasi', 'Penerbitan SK Perubahan', 'Selesai'] :
+      tmpl.aktaType.includes('Jual_Beli_Tanah') ?
+      ['Verifikasi Dokumen Tanah', 'Cek Sertifikat di BPN', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pembayaran BPHTB', 'Pendaftaran ke BPN', 'Selesai'] :
+      tmpl.aktaType.includes('Jual_Beli_Properti') ?
+      ['Verifikasi Dokumen Properti', 'Cek Sertifikat di BPN', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pembayaran BPHTB', 'Pendaftaran ke BPN', 'Selesai'] :
+      tmpl.aktaType.includes('Jual_Beli_Kendaraan') ?
+      ['Verifikasi Dokumen Kendaraan', 'Cek BPKB', 'Penyusunan Akta', 'Penandatanganan Akta', 'Balik Nama di Samsat', 'Selesai'] :
+      tmpl.aktaType.includes('Perjanjian_Kredit') ?
+      ['Negosiasi Syarat Kredit', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Pencairan Kredit', 'Selesai'] :
+      tmpl.aktaType.includes('Perjanjian_Sewa') ?
+      ['Negosiasi Syarat Sewa', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Serah Terima Objek', 'Selesai'] :
+      tmpl.aktaType.includes('Perjanjian_Kerjasama') ?
+      ['Negosiasi Kerja Sama', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Implementasi Kerja Sama', 'Selesai'] :
+      tmpl.aktaType.includes('Perjanjian_Pengakuan_Utang') ?
+      ['Verifikasi Utang', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Selesai'] :
+      tmpl.aktaType.includes('Akta_Hak_Waris') ?
+      ['Verifikasi Dokumen Kematian', 'Pendataan Ahli Waris', 'Inventarisasi Harta Warisan', 'Penyusunan Akta', 'Penandatanganan Akta', 'Selesai'] :
+      tmpl.aktaType.includes('Akta_Wasiat') ?
+      ['Konsultasi dengan Pewasiat', 'Penyusunan Akta Wasiat', 'Penandatanganan Akta', 'Pendaftaran di Pusat Daftar Wasiat', 'Selesai'] :
+      ['Verifikasi Dokumen', 'Penyusunan Akta Hibah', 'Penandatanganan Akta', 'Pembayaran Bea Perolehan', 'Peralihan Hak', 'Selesai']
+    ).map((name, index) => ({
+      id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, ''),
+      name,
+      order: index
+    }));
+    const expectedPrefix = prefixMap[tmpl.aktaType] || 'AKT';
+    const existing = existingTemplates.find(e => e.aktaType === tmpl.aktaType);
+    if (!existing) {
       const templateId = crypto.randomUUID();
-
-      const stages = (tmpl.aktaType.includes('PT_Pendirian') ?
-        ['Pengecekan Nama PT', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan SK Kemenkumham', 'Penerbitan SK', 'Selesai'] :
-        tmpl.aktaType.includes('PT_Perubahan') ?
-        ['Rapat Umum Pemegang Saham', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
-        tmpl.aktaType.includes('Yayasan_Pendirian') ?
-        ['Pengecekan Nama Yayasan', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan SK Kemenkumham', 'Penerbitan SK', 'Selesai'] :
-        tmpl.aktaType.includes('Yayasan_Perubahan') ?
-        ['Rapat Pembina', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
-        tmpl.aktaType.includes('CV_Pendirian') ?
-        ['Penyusunan Akta', 'Penandatanganan Akta', 'Pendaftaran ke Kemenkumham', 'Penerbitan SK', 'Selesai'] :
-        tmpl.aktaType.includes('CV_Perubahan') ?
-        ['Musyawarah Sekutu', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Kemenkumham', 'Penerbitan SK Perubahan', 'Selesai'] :
-        tmpl.aktaType.includes('Koperasi_Pendirian') ?
-        ['Rapat Pendirian', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pengajuan ke Dinas Koperasi', 'Penerbitan SK', 'Selesai'] :
-        tmpl.aktaType.includes('Koperasi_Perubahan') ?
-        ['Rapat Anggota', 'Penyusunan Akta Perubahan', 'Penandatanganan Akta', 'Pengajuan ke Dinas Koperasi', 'Penerbitan SK Perubahan', 'Selesai'] :
-        tmpl.aktaType.includes('Jual_Beli_Tanah') ?
-        ['Verifikasi Dokumen Tanah', 'Cek Sertifikat di BPN', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pembayaran BPHTB', 'Pendaftaran ke BPN', 'Selesai'] :
-        tmpl.aktaType.includes('Jual_Beli_Properti') ?
-        ['Verifikasi Dokumen Properti', 'Cek Sertifikat di BPN', 'Penyusunan Akta', 'Penandatanganan Akta', 'Pembayaran BPHTB', 'Pendaftaran ke BPN', 'Selesai'] :
-        tmpl.aktaType.includes('Jual_Beli_Kendaraan') ?
-        ['Verifikasi Dokumen Kendaraan', 'Cek BPKB', 'Penyusunan Akta', 'Penandatanganan Akta', 'Balik Nama di Samsat', 'Selesai'] :
-        tmpl.aktaType.includes('Perjanjian_Kredit') ?
-        ['Negosiasi Syarat Kredit', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Pencairan Kredit', 'Selesai'] :
-        tmpl.aktaType.includes('Perjanjian_Sewa') ?
-        ['Negosiasi Syarat Sewa', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Serah Terima Objek', 'Selesai'] :
-        tmpl.aktaType.includes('Perjanjian_Kerjasama') ?
-        ['Negosiasi Kerja Sama', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Implementasi Kerja Sama', 'Selesai'] :
-        tmpl.aktaType.includes('Perjanjian_Pengakuan_Utang') ?
-        ['Verifikasi Utang', 'Penyusunan Perjanjian', 'Review Hukum', 'Penandatanganan Perjanjian', 'Selesai'] :
-        tmpl.aktaType.includes('Akta_Hak_Waris') ?
-        ['Verifikasi Dokumen Kematian', 'Pendataan Ahli Waris', 'Inventarisasi Harta Warisan', 'Penyusunan Akta', 'Penandatanganan Akta', 'Selesai'] :
-        tmpl.aktaType.includes('Akta_Wasiat') ?
-        ['Konsultasi dengan Pewasiat', 'Penyusunan Akta Wasiat', 'Penandatanganan Akta', 'Pendaftaran di Pusat Daftar Wasiat', 'Selesai'] :
-        ['Verifikasi Dokumen', 'Penyusunan Akta Hibah', 'Penandatanganan Akta', 'Pembayaran Bea Perolehan', 'Peralihan Hak', 'Selesai']
-      ).map((name, index) => ({
-        id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/-+$/, ''),
-        name,
-        order: index
-      }));
-
       await db.insert(aktaTemplates).values({
         id: templateId,
         name: tmpl.name,
         aktaType: tmpl.aktaType,
         category: tmpl.category,
         description: tmpl.description,
-        content: '',
+        content: null,
+        prefix: expectedPrefix,
         stages,
         version: 1,
       });
-
       const fieldValues = fields.map((field, index) => ({
         id: crypto.randomUUID(),
         templateId,
@@ -449,10 +753,41 @@ export async function runSeed(database) {
         validation: null,
         order: index,
       }));
-
-      await db.insert(templateFields).values(fieldValues);
+      if (fieldValues.length) await db.insert(templateFields).values(fieldValues);
       console.log(`  Seeded: ${tmpl.name} (${fields.length} fields)`);
+      created++;
+    } else {
+      const needPrefixUpdate = existing.prefix !== expectedPrefix;
+      const existingFieldNames = (existing.fields || []).map(f => f.name).sort().join(',');
+      const expectedFieldNames = fields.map(f => f.name).sort().join(',');
+      const needFieldSync = existingFieldNames !== expectedFieldNames || (existing.fields || []).length !== fields.length;
+      if (needPrefixUpdate || needFieldSync) {
+        await db.update(aktaTemplates).set({ prefix: expectedPrefix, stages, updatedAt: new Date(), version: existing.version + 1 }).where(eq(aktaTemplates.id, existing.id));
+        if (needFieldSync) {
+          await db.delete(templateFields).where(eq(templateFields.templateId, existing.id));
+          const fieldValues = fields.map((field, index) => ({
+            id: crypto.randomUUID(),
+            templateId: existing.id,
+            name: field.name,
+            label: field.label,
+            type: field.type,
+            required: field.required,
+            options: field.options || null,
+            placeholder: null,
+            validation: null,
+            order: index,
+          }));
+          if (fieldValues.length) await db.insert(templateFields).values(fieldValues);
+        }
+        console.log(`  Updated: ${tmpl.name} (${fields.length} fields, prefix ${expectedPrefix})`);
+        updated++;
+      }
     }
+  }
+  if (created === 0 && updated === 0 && existingTemplates.length > 0) {
+    console.log(`Found ${existingTemplates.length} existing templates. All up to date.`);
+  } else if (existingTemplates.length > 0) {
+    console.log(`Sync complete: ${created} created, ${updated} updated.`);
   }
 
   const existingUsers = await db.query.users.findMany();

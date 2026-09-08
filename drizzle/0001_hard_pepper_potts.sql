@@ -1,0 +1,1 @@
+ALTER TABLE "progress_history" ADD CONSTRAINT "progress_history_completed_by_users_id_fk" FOREIGN KEY ("completed_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;

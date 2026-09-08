@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { db } from '../../lib/db.js';
-import { aktas as aktasTable, progressHistory, aktaTemplates } from '../../lib/schema.js';
+import { aktas as aktasTable, progressHistory, aktaTemplates, aktaCounters } from '../../lib/schema.js';
 import { eq, desc, and } from 'drizzle-orm';
 import { authenticate } from '../middleware/auth.js';
 import { generateDocument } from '../../lib/documentGenerator.js';
@@ -15,6 +15,21 @@ export function generateTrackingCode() {
   const year = new Date().getFullYear();
   const random = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `AKT-${year}-${random}`;
+}
+
+export async function generateSequentialCode(prefixRaw) {
+  const year = new Date().getFullYear();
+  const prefix = (prefixRaw || 'AKT').trim() || 'AKT';
+  const existing = await db.query.aktaCounters.findFirst({
+    where: and(eq(aktaCounters.prefix, prefix), eq(aktaCounters.year, year))
+  });
+  if (!existing) {
+    await db.insert(aktaCounters).values({ id: crypto.randomUUID(), prefix, year, lastNumber: 1 });
+    return `${prefix}/${year}/001`;
+  }
+  const next = existing.lastNumber + 1;
+  await db.update(aktaCounters).set({ lastNumber: next, updatedAt: new Date() }).where(eq(aktaCounters.id, existing.id));
+  return `${prefix}/${year}/${String(next).padStart(3, '0')}`;
 }
 
 aktas.get('/track/:code', async (c) => {
@@ -132,7 +147,19 @@ aktas.post('/', authenticate, zValidator('json', z.object({
     if (!template) return c.json({ error: 'Template not found for this akta type' }, 404);
 
     const aktaId = crypto.randomUUID();
-    const trackingCode = generateTrackingCode();
+    let trackingCode;
+    try {
+      trackingCode = await generateSequentialCode(template.prefix);
+    } catch {
+      trackingCode = generateTrackingCode();
+    }
+    let retries = 0;
+    while (retries < 3) {
+      const exists = await db.query.aktas.findFirst({ where: eq(aktasTable.trackingCode, trackingCode) });
+      if (!exists) break;
+      trackingCode = await generateSequentialCode(template.prefix);
+      retries++;
+    }
     const firstStage = template.stages[0]?.id || 'draft';
 
     await db.insert(aktasTable).values({

@@ -10,6 +10,7 @@ import Deeds from './pages/Deeds.jsx'
 import DeedDetail from './pages/DeedDetail.jsx'
 import CreateDeed from './pages/CreateDeed.jsx'
 import Users from './pages/Users.jsx'
+import Templates from './pages/Templates.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
             <Route path="deeds" element={<Deeds />} />
             <Route path="deeds/:id" element={<DeedDetail />} />
             <Route path="deeds/create" element={<CreateDeed />} />
+            <Route path="templates" element={<Templates />} />
             <Route path="users" element={<Users />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

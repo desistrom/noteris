@@ -27,8 +27,8 @@ if (url && (url.startsWith('pglite') || process.env.DB_DRIVER === 'pglite')) {
   }
   if (!db) throw lastErr;
 } else {
-  if (!url) {
-    throw new Error('DATABASE_URL must be set in environment variables');
+  if (!url || url === 'env(DATABASE_URL)' || url.includes('env(')) {
+    throw new Error('DATABASE_URL must be set to a valid postgres URL, got: ' + url);
   }
   const { neon } = await import('@neondatabase/serverless');
   const { drizzle } = await import('drizzle-orm/neon-http');

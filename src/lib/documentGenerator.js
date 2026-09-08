@@ -1,6 +1,7 @@
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, BorderStyle, TabStopPosition, TabStopType, TableRow, TableCell, Table, WidthType } from 'docx';
-import { writeFile, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
+import { writeFile, mkdir, readFile } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 import { getDeedContent } from './deedContent.js';
 
 export function replacePlaceholders(text, data) {
@@ -48,12 +49,52 @@ function createParagraphsFromText(text, data) {
 }
 
 export async function generateDocument(akta, template) {
+  const formData = akta.formData || {};
+  if (template.templateFilePath && existsSync(join(process.cwd(), template.templateFilePath))) {
+    const ext = template.templateFileName?.toLowerCase().endsWith('.pdf') || template.templateMime?.includes('pdf') ? 'pdf' : 'docx';
+    if (ext === 'docx') {
+      try {
+        const PizZip = (await import('pizzip')).default;
+        const Docxtemplater = (await import('docxtemplater')).default;
+        const buf = await readFile(join(process.cwd(), template.templateFilePath));
+        const zip = new PizZip(buf);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' } });
+        const data = { ...formData, trackingCode: akta.trackingCode, nomor: akta.trackingCode, aktaType: akta.aktaType, clientName: akta.clientName };
+        doc.render(data);
+        const out = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+        await mkdir(join(process.cwd(), 'generated'), { recursive: true });
+        const filePath = `generated/${akta.id}.docx`;
+        await writeFile(join(process.cwd(), filePath), out);
+        return filePath;
+      } catch (e) {
+        console.warn('Docxtemplater failed, fallback to default generator', e.message);
+      }
+    } else {
+      try {
+        const { PDFDocument } = await import('pdf-lib');
+        const buf = await readFile(join(process.cwd(), template.templateFilePath));
+        const pdfDoc = await PDFDocument.load(buf);
+        const pages = pdfDoc.getPages();
+        if (pages.length > 0) {
+          const first = pages[0];
+          first.drawText(`No: ${akta.trackingCode}`, { x: 50, y: first.getHeight() - 30, size: 9 });
+        }
+        const out = await pdfDoc.save();
+        await mkdir(join(process.cwd(), 'generated'), { recursive: true });
+        const filePath = `generated/${akta.id}.pdf`;
+        await writeFile(join(process.cwd(), filePath), out);
+        return filePath;
+      } catch (e) {
+        console.warn('PDF templating failed', e.message);
+      }
+    }
+  }
+
   const deedData = getDeedContent(akta.aktaType);
   if (!deedData) {
     throw new Error(`No document content defined for akta type: ${akta.aktaType}`);
   }
 
-  const formData = akta.formData || {};
   const allParagraphs = [];
 
   allParagraphs.push(new Paragraph({

@@ -1,0 +1,1 @@
+ALTER TABLE "akta_counters" ADD CONSTRAINT "akta_counters_prefix_year_unique" UNIQUE("prefix","year");

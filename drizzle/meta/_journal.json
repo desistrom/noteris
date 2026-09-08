@@ -8,6 +8,27 @@
       "when": 1787922528667,
       "tag": "0000_spooky_riptide",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788573564927,
+      "tag": "0001_hard_pepper_potts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788575376071,
+      "tag": "0002_talented_ser_duncan",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788575388374,
+      "tag": "0003_workable_ghost_rider",
+      "breakpoints": true
     }
   ]
 }

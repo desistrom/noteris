@@ -12,6 +12,7 @@ coverage/
 
 # Generated documents
 generated/
+uploads/
 .nyc_output/
 .eslintcache
 :memory:

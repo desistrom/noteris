@@ -1,14 +1,10 @@
-import { Outlet } from 'react-router-dom';
-import Header from './components/Header';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminLayout from './components/AdminLayout';
 
 export default function App() {
   return (
     <ProtectedRoute>
-      <Header />
-      <div className="main-content">
-        <Outlet />
-      </div>
+      <AdminLayout />
     </ProtectedRoute>
   );
 }
